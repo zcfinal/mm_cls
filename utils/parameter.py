@@ -1,6 +1,6 @@
 import argparse
 import logging
-
+dataset2classnum={'HateMM':2,'mmimdb':23}
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -11,14 +11,16 @@ def parse_args():
     parser.add_argument("--trainer", type=str, default='BaseTrainer')
     parser.add_argument("--dataset", type=str, default='HateMM')
     parser.add_argument("--dataset_version", type=str, default='all')
-    parser.add_argument("--model", type=str, default='clip')
+    parser.add_argument("--model", type=str, default='ClipModel')
+    parser.add_argument("--fusion", type=str, default='MLP')
     
-    parser.add_argument("--per_device_train_batch_size", type=int, default=64)
-    parser.add_argument("--per_device_eval_batch_size", type=int, default=128)
+    parser.add_argument("--train_batch_size", type=int, default=64)
+    parser.add_argument("--eval_batch_size", type=int, default=128)
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--learning_rate", type=float, default=0.00005)
     parser.add_argument("--logging_steps", type=int, default=100)
     parser.add_argument("--eval_steps", type=int, default=200)
 
     args = parser.parse_args()
+    args.num_classes = dataset2classnum[args.dataset]
     return args
