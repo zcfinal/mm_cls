@@ -3,6 +3,7 @@ import torch
 import requests
 from transformers import CLIPProcessor, CLIPModel
 import jsonlines
+import json
 from tqdm import tqdm
 from torch.utils.data import Dataset,DataLoader
 
@@ -12,14 +13,13 @@ model = model.cuda()
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
 #----------------------preprocess data----------------------#
-validate_file = "/data/zclfe/mm_cls/data/data/train.jsonl"
-data_dir = "/data/zclfe/mm_cls/data/data/"
-datas = []
+validate_file = "/data/zclfe/mm_cls/data/mmimdb/split.json"
+data_dir='/data/zclfe/mm_cls/data/mmimdb/dataset'
 with open(validate_file, "r+", encoding="utf8") as f:
-    for item in jsonlines.Reader(f):
-        datas.append(item)
+    data = json.load(f)
+data = data['train']
 
-print(f'data length: {len(datas)}')
+print(f'data length: {len(data)}')
 
 class Dataset(Dataset):
     def __init__(self,datas):
@@ -29,9 +29,11 @@ class Dataset(Dataset):
         return len(self.datas)
     
     def __getitem__(self,idx):
-        ids = self.datas[idx]['id']
-        image = Image.open(data_dir+self.datas[idx]['img'])
-        text=self.datas[idx]['text']
+        ids = self.datas[idx]
+        with open(data_dir+f'/{ids}.json','r')as f:
+            metadata = json.load(f)
+            text = metadata['plot'][-1]
+        image = Image.open(data_dir+f'/{ids}.jpeg')
         return ids,image,text
 
 def collate_fn(batch):
@@ -39,7 +41,7 @@ def collate_fn(batch):
     data = processor(text=text, images=image, return_tensors="pt", padding=True, truncation=True, max_length=77)
     return ids,data
 
-dataset = Dataset(datas)
+dataset = Dataset(data)
 dataloader = DataLoader(dataset,batch_size=64,collate_fn=collate_fn)
 
 #--------------------------compute similarity---------------------#
@@ -49,7 +51,7 @@ def to_cuda(data):
         data[key] = data[key].cuda()
     return data
 
-file_out = '/data/zclfe/mm_cls/log/hatemm_sim_train.txt'
+file_out = '/data/zclfe/mm_cls/log/mmimdb_sim_train.txt'
 f=open(file_out,'w')
 for ids, data in tqdm(dataloader):
     data = to_cuda(data)

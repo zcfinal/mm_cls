@@ -58,11 +58,14 @@ class MMImdbDataloaderSet:
         return data
 
     def init_dataset(self,mode):
+        select_data = None
+        if self.args.dataset_version is not None and mode=='train':
+            with open(self.data_dir+'/'+self.args.dataset_version,'r')as f:
+                select_data = json.load(f)
         data_path = self.data_dir+'/split.json'
         with open(data_path, "r+", encoding="utf8") as f:
             data = json.load(f)
         data = data[mode]
-        print(f'{mode} data length: {len(data)}')
 
         datas=[]
         for ids in data:
@@ -71,7 +74,11 @@ class MMImdbDataloaderSet:
                 text = metadata['plot'][-1]
                 label = metadata['genres']
                 self.label_list.extend(label)
+                if mode=='train' and select_data is not None:
+                    if ids not in select_data:
+                        continue
                 datas.append({'id':ids,'text':text,'label':label})
-                
+        
+        print(f'{mode} data length: {len(datas)}')
         return datas
     

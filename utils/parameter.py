@@ -10,7 +10,7 @@ def parse_args():
     parser.add_argument("--log_dir", type=str, default=None)
     parser.add_argument("--trainer", type=str, default='BaseTrainer')
     parser.add_argument("--dataset", type=str, default='HateMM')
-    parser.add_argument("--dataset_version", type=str, default='all')
+    parser.add_argument("--dataset_version", type=str, default=None)
     parser.add_argument("--model", type=str, default='ClipModel')
     parser.add_argument("--fusion", type=str, default='MLP')
     

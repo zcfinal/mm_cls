@@ -74,4 +74,4 @@ class BaseTrainer:
 
         self.model.load_state_dict(self.best_model)
         torch.save(self.best_model,self.args.log_dir+'/model/best.pt')
-        self.eval(0,'test')
+        self.eval(epoch,'test')
