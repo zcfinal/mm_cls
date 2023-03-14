@@ -28,12 +28,15 @@ class MMImdbDataloaderSet:
     def __init__(self,args,model):
         self.args = args
         self.data_dir = '/data/zclfe/mm_cls/data/mmimdb'
+        self.model=model
         self.processor = model.processor
         self.label2id={}
         self.label_list=[]
         traindata = self.init_dataset('train')
         devdata = self.init_dataset('dev')
         testdata = self.init_dataset('test')
+        datas=[traindata,devdata,testdata]
+        self.build_vocab(datas)
         self.count_label()
 
         traindataset = ITDataset(traindata,self.data_dir,self.label2id)
@@ -56,6 +59,11 @@ class MMImdbDataloaderSet:
         data = self.processor(text=text, images=image, return_tensors="pt", padding=True, truncation=True, max_length=77)
         data['label']=torch.stack(label,0)
         return data
+
+    def build_vocab(self,datas):
+        if hasattr(self.processor,'need_build_vocab'):
+            self.processor.build_vocab(datas)
+            self.model.text_model.build_embedding(self.processor.tokenzier.embedding_matrix)
 
     def init_dataset(self,mode):
         select_data = None

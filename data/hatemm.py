@@ -22,10 +22,13 @@ class HateMMDataloaderSet:
     def __init__(self,args,model):
         self.args = args
         self.data_dir = '/data/zclfe/mm_cls/data/data/'
+        self.model=model
         self.processor = model.processor
         traindata = self.init_dataset('train')
         devdata = self.init_dataset('dev')
         testdata = self.init_dataset('test')
+        datas=[traindata,devdata,testdata]
+        self.build_vocab(datas)
 
         traindataset = ITDataset(traindata,self.data_dir)
         devdataset = ITDataset(devdata,self.data_dir)
@@ -40,6 +43,11 @@ class HateMMDataloaderSet:
         data = self.processor(text=text, images=image, return_tensors="pt", padding=True, truncation=True, max_length=77)
         data['label']=torch.LongTensor(label)
         return data
+
+    def build_vocab(self,datas):
+        if hasattr(self.processor,'need_build_vocab'):
+            self.processor.build_vocab(datas)
+            self.model.text_model.build_embedding(self.processor.tokenzier.embedding_matrix)
 
     def init_dataset(self,mode):
         data_path = self.data_dir+mode+'.jsonl'

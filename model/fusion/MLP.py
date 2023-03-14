@@ -2,15 +2,16 @@ import torch.nn as nn
 import torch
 
 class MLP(nn.Module):
-    def __init__(self,args):
+    def __init__(self,args,dim):
         super().__init__()
         self.args = args
+        self.dim = dim
         self.cls = nn.Sequential(
-            nn.Linear(1024,512),
+            nn.Linear(dim*2,dim),
             nn.Tanh(),
-            nn.Linear(512,256),
+            nn.Linear(dim,dim//2),
             nn.Tanh(),
-            nn.Linear(256,self.args.num_classes),
+            nn.Linear(dim//2,self.args.num_classes),
         )
         self.initialize()
 

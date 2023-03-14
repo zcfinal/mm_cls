@@ -12,7 +12,7 @@ class ClipModel(nn.Module):
         for name,parameters in self.model.named_parameters():
             parameters.requires_grad = False
 
-        self.fusion = get_fusion(self.args.fusion)(args)
+        self.fusion = get_fusion(self.args.fusion)(args,512)
         self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
         if self.args.dataset=='mmimdb':
             self.criterien = nn.BCEWithLogitsLoss(reduction='none')
