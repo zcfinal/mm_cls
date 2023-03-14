@@ -30,8 +30,6 @@ class ResNet9(nn.Module):
         self.layer3_head = conv_bn_relu_pool(256, 512, pool=True)
         self.layer3_residual = nn.Sequential(conv_bn_relu_pool(512, 512), conv_bn_relu_pool(512, 512))
         self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.trans = nn.Linear(512,128)
-        self.dropout = nn.Dropout(0.2)
     
     def forward(self,x):
         x = self.conv1(x)
@@ -46,8 +44,6 @@ class ResNet9(nn.Module):
         x = self.layer3_residual(x) + x
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.trans(x)
-        x = self.dropout(x)
         return x
     
 class RNN(nn.Module):
@@ -57,22 +53,19 @@ class RNN(nn.Module):
         self.embedding_dim = 200
         self.rnn = nn.GRU(self.embedding_dim,
                         hidden_size=200,
-                        num_layers=1,
+                        num_layers=3,
                         bidirectional=True,
                         batch_first=True)
-        self.dropout = nn.Dropout(0.2)
         self.attention = AttentionPooling(400)
-        self.fc = nn.Linear(400, 128)
+        self.fc = nn.Linear(400, 512)
     
     def build_embedding(self,emb):
         self.embedding = nn.Embedding.from_pretrained(torch.FloatTensor(emb),freeze=True)
 
-    def forward(self, text):
+    def forward(self, text, mask):
         emb = self.embedding(text)
-        emb = self.dropout(emb)
         emb = self.rnn(emb)[0]
-        emb = self.dropout(emb)
-        emb = self.attention(emb)
+        emb = self.attention(emb,mask)
         emb = self.fc(emb)
         return emb
 
@@ -122,13 +115,17 @@ class Glove_Tokenizer:
 
     def __call__(self,sentences):
         token = []
+        masks = []
         for sentence in sentences:
             words = word_tokenize(sentence.lower())
             words = [self.vocab[word] for word in words[:self.max_length]]
             words = [0]*(self.max_length-len(words))+words
+            mask = [0]*(self.max_length-len(words))+[1]*len(words)
             token.append(words)
+            masks.append(mask)
         token = torch.LongTensor(token)
-        return token
+        masks = torch.FloatTensor(masks)
+        return token, masks
         
 
 class Preprocess:
@@ -142,10 +139,10 @@ class Preprocess:
 
 
     def __call__(self, *args, **kwds):
-        text = self.tokenzier(kwds['text'])
+        text, mask = self.tokenzier(kwds['text'])
         image = self.image_process(kwds['images'])
         image = torch.FloatTensor(np.array(image['pixel_values']))
-        rslt={'image':image,'text':text}
+        rslt={'image':image,'text':text,'mask':mask}
         return rslt
         
         
@@ -158,7 +155,7 @@ class SimpleModel(nn.Module):
         self.text_model = RNN()
         self.visul_model = ResNet9()
 
-        self.fusion = get_fusion(self.args.fusion)(args,128) 
+        self.fusion = get_fusion(self.args.fusion)(args,512) 
         if self.args.dataset=='mmimdb':
             self.criterien = nn.BCEWithLogitsLoss(reduction='none')
         else:
@@ -171,7 +168,7 @@ class SimpleModel(nn.Module):
             del data['label']
         
         image_embeds = self.visul_model(data['image'])
-        text_embeds = self.text_model(data['text'])
+        text_embeds = self.text_model(data['text'], data['mask'])
 
         logits = self.fusion(image_embeds, text_embeds)
         loss=None

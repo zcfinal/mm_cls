@@ -7,7 +7,7 @@ class AttentionCls(nn.Module):
         self.args = args
         self.dim = dim
         self.pooling = AttentionPooling(dim)
-        self.fc = nn.Linear(dim,self.args.num_classed)
+        self.fc = nn.Linear(dim,self.args.num_classes)
     
     def forward(self,image_emb,text_emb):
         emb = torch.stack([image_emb,text_emb],dim=1)
@@ -26,7 +26,7 @@ class AttentionPooling(nn.Module):
         
     def init_weights(self, module):
         if isinstance(module, (nn.Linear)):
-            nn.init.xavier_uniform_(module.weight)
+            nn.init.xavier_normal_(module.weight)
             
                 
     def forward(self, x, attn_mask=None):

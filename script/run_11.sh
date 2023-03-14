@@ -2,7 +2,8 @@ cd ..
 
 dataset=mmimdb
 dataset_version=top30.json
-exp_name=${dataset}_${dataset_version}_clip_freeze_mlp
+fusion=GateCls
+exp_name=${dataset}_${dataset_version}_clip_freeze_${fusion}
 log_dir=/data/zclfe/mm_cls/log/${exp_name}
 
 python main.py \
@@ -12,4 +13,5 @@ python main.py \
 --logging_steps 10 \
 --eval_steps 30 \
 --learning_rate 0.005 \
---dataset_version ${dataset_version}
+--dataset_version ${dataset_version} \
+--fusion ${fusion}
